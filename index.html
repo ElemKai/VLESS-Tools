@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koala Clash / Happ JSON Converter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔄 Конвертер конфигов</h1>
+            <p class="subtitle">Koala Clash → VLESS | Happ JSON → VLESS</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="koala">Koala Clash</button>
+            <button class="tab-btn" data-tab="happ">Happ JSON</button>
+        </div>
+
+        <!-- Koala Clash Tab -->
+        <div id="koala" class="tab-content active">
+            <div class="input-section">
+                <label for="koala-input">Вставьте конфиг Koala Clash:</label>
+                <textarea id="koala-input" placeholder="Вставьте сюда YAML/JSON конфиг Koala Clash..."></textarea>
+            </div>
+            <button class="convert-btn" onclick="convertKoala()">Конвертировать в VLESS</button>
+        </div>
+
+        <!-- Happ JSON Tab -->
+        <div id="happ" class="tab-content">
+            <div class="input-section">
+                <label for="happ-input">Вставьте JSON конфиг Happ:</label>
+                <textarea id="happ-input" placeholder='{"outbounds": [...], ...}'></textarea>
+            </div>
+            <button class="convert-btn" onclick="convertHapp()">Конвертировать в VLESS</button>
+        </div>
+
+        <!-- Result Section -->
+        <div id="result-section" class="result-section" style="display: none;">
+            <div class="result-header">
+                <h2>✅ Результат: <span id="result-count"></span></h2>
+                <div class="result-actions-top">
+                    <button class="action-btn copy-all-btn" onclick="copyAll()">📋 Копировать все</button>
+                    <button class="action-btn download-btn" onclick="downloadAll()">💾 Скачать файл</button>
+                </div>
+            </div>
+            <div id="results-list" class="results-list"></div>
+            <div class="actions">
+                <button class="action-btn clear-btn" onclick="clearAll()">🗑️ Очистить</button>
+            </div>
+            <div id="message" class="message"></div>
+        </div>
+
+        <footer>
+            <p>Работает полностью в браузере • Данные не отправляются на сервер</p>
+        </footer>
+    </div>
+
+    <script src="converter.js"></script>
+</body>
+</html>
