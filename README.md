@@ -4,7 +4,7 @@
 
 ## 🌐 Демо
 
-[Открыть конвертер](https://ВАШ_ЛОГИН.github.io/vless-converter/)
+[Открыть конвертер](https://elemkai.github.io/vless-converter/)
 
 ## ✨ Возможности
 
@@ -18,7 +18,7 @@
 
 ## 🚀 Использование
 
-1. Откройте [демо-сайт](https://ВАШ_ЛОГИН.github.io/vless-converter/)
+1. Откройте [сайт](https://elemkai.github.io/vless-converter/)
 2. Выберите вкладку **Koala Clash** или **Happ JSON**
 3. Вставьте конфиг в текстовое поле
 4. Нажмите **"Конвертировать в VLESS"**
