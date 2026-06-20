@@ -1,10 +1,9 @@
-// Глобальная переменная для хранения результатов
+// Глобальные переменные
 let currentResults = [];
 let currentTab = 'koala';
 
-// Инициализация после загрузки DOM
-document.addEventListener('DOMContentLoaded', function() {
-    // Tab switching
+// Инициализация табов
+function initTabs() {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const tabName = this.dataset.tab;
@@ -17,59 +16,25 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById(tabName).classList.add('active');
         });
     });
-
-    // Анимация текста "Поддержать проект"
-    const chars = '0123456789ABCDEF#$%&!?*+=-[]';
-    const elMain = document.getElementById('donateText');
-    const elSub = document.getElementById('donateSub');
-    
-    if (elMain && elSub) {
-        function scramble(el, final) {
-            let frame = 0;
-            const total = 16;
-            const timer = setInterval(() => {
-                el.textContent = final.split('').map((c, i) => {
-                    if (frame > total - final.length + i) return c;
-                    return chars[Math.floor(Math.random() * chars.length)];
-                }).join('');
-                if (++frame > total + final.length) {
-                    clearInterval(timer);
-                    el.textContent = final;
-                }
-            }, 45);
-        }
-        
-        function run() {
-            scramble(elMain, 'Поддержать');
-            setTimeout(() => scramble(elSub, 'проект'), 150);
-        }
-        
-        setTimeout(run, 2000);
-        setInterval(run, 6000);
-    }
-});
-
-// Мобильное меню
-function toggleMobile() {
-    const btn = document.getElementById('burgerBtn');
-    const menu = document.getElementById('mobileMenu');
-    btn.classList.toggle('open');
-    menu.classList.toggle('open');
 }
 
-// Закрыть мобильное меню при клике вне его
-document.addEventListener('click', function(e) {
-    const btn = document.getElementById('burgerBtn');
-    const menu = document.getElementById('mobileMenu');
-    if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
-        btn.classList.remove('open');
-        menu.classList.remove('open');
+// Запуск инициализации после загрузки компонентов
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTabs);
+} else {
+    // Если DOM уже готов, ждём загрузки компонентов
+    if (document.getElementById('header-placeholder') && 
+        document.getElementById('header-placeholder').innerHTML) {
+        initTabs();
+    } else {
+        window.addEventListener('componentsLoaded', initTabs);
     }
-});
+}
 
 // Установка статуса
 function setStatus(type, text) {
     const sb = document.getElementById('statusBar');
+    if (!sb) return;
     sb.className = 'status-bar ' + type;
     document.getElementById('statusText').textContent = text;
 }
@@ -83,7 +48,7 @@ function convert() {
     }
 }
 
-// ==================== Koala Clash конвертация ====================
+// ==================== Koala Clash ====================
 
 function convertKoala() {
     const input = document.getElementById('koala-input').value.trim();
@@ -95,7 +60,6 @@ function convertKoala() {
     
     try {
         let config;
-        
         try {
             config = JSON.parse(input);
         } catch (e) {
@@ -117,7 +81,7 @@ function convertKoala() {
     }
 }
 
-// ==================== Happ JSON конвертация ====================
+// ==================== Happ JSON ====================
 
 function convertHapp() {
     const input = document.getElementById('happ-input').value.trim();
@@ -144,7 +108,7 @@ function convertHapp() {
     }
 }
 
-// ==================== Рендер результатов ====================
+// ==================== Рендер ====================
 
 function renderResults(results) {
     currentResults = results;
@@ -179,7 +143,7 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// ==================== Действия с результатами ====================
+// ==================== Действия ====================
 
 function copyItem(index) {
     const item = currentResults[index];
@@ -197,7 +161,6 @@ function copyItem(index) {
             }, 2000);
         }
     }).catch(() => {
-        // Fallback
         const textarea = document.createElement('textarea');
         textarea.value = item.link;
         document.body.appendChild(textarea);
@@ -261,16 +224,10 @@ function clearAll() {
     setStatus('', 'ожидание ввода...');
 }
 
-// ==================== Happ JSON: парсинг и построение VLESS ====================
+// ==================== Happ JSON парсинг ====================
 
 function jsonToVlessArray(configJson) {
-    let config;
-    if (typeof configJson === 'string') {
-        config = JSON.parse(configJson);
-    } else {
-        config = configJson;
-    }
-    
+    let config = typeof configJson === 'string' ? JSON.parse(configJson) : configJson;
     const results = [];
     
     for (const outbound of config.outbounds || []) {
@@ -372,7 +329,7 @@ function buildVlessFromOutbound(vlessOutbound, remarks) {
     return vlessUrl;
 }
 
-// ==================== Koala Clash: парсинг YAML ====================
+// ==================== Koala Clash парсинг ====================
 
 function parseKoalaConfig(text) {
     const config = { proxies: [] };
@@ -398,9 +355,7 @@ function parseKoalaConfig(text) {
         if (!inProxies) continue;
         
         if (trimmed.startsWith('- ')) {
-            if (currentProxy) {
-                config.proxies.push(currentProxy);
-            }
+            if (currentProxy) config.proxies.push(currentProxy);
             
             currentProxy = {};
             currentKey = null;
@@ -446,9 +401,7 @@ function parseKoalaConfig(text) {
         }
     }
     
-    if (currentProxy) {
-        config.proxies.push(currentProxy);
-    }
+    if (currentProxy) config.proxies.push(currentProxy);
     
     return config;
 }
