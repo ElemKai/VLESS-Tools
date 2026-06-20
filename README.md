@@ -2,7 +2,7 @@
 
 Веб-конвертер конфигов Koala Clash и Happ JSON в VLESS-ссылки.
 
-## 🌐 Демо
+## 🌐 Web Конвертер
 
 [Открыть конвертер](https://elemkai.github.io/vless-converter/)
 
