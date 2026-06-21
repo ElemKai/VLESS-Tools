@@ -10,254 +10,227 @@
 <canvas id="bg-canvas"></canvas>
 
 <nav>
-    <div class="nav-logo">~VLESS</div>
+    <span class="nav-logo">VLESS<span style="color:var(--white-muted)">TOOLS</span></span>
     <div class="nav-links">
-        <a href="#/home" data-id="home">Главная</a>
-        <a href="#/converter" data-id="conv">Конвертер</a>
-        <a href="#/checker" data-id="check">Чекер</a>
-        <a href="#/blog" data-id="blog">Блог</a>
-        <a href="#/admin" data-id="admin">Админ</a>
+        <a href="#/">Главная</a>
+        <a href="#/converter">Конвертер</a>
+        <a href="#/checker">Чекер</a>
+        <a href="#/blog">Блог</a>
+        <a href="#/admin">Админ</a>
     </div>
     <div class="nav-spacer"></div>
-    <button class="nav-support" onclick="openSupport()">✦ Поддержать</button>
+    <button class="nav-support" onclick="openSupport()">☕ Donate</button>
 </nav>
 
-<div id="app"></div>
-
-<!-- PAGE: Home -->
-<template id="page-home">
-    <div class="hero">
-        <h1><span>VLESS</span> Tools</h1>
-        <p>Конвертер подписок, проверка серверов, управление OpenWRT и блог — всё в одном месте.</p>
+<!-- ======== HOME ======== -->
+<div id="page-home" class="page active">
+    <section class="hero">
+        <h1>VLESS <span>Tools</span></h1>
+        <p>Преобразование подписок, проверка серверов, IP-инструменты и управление OpenWRT в одном месте</p>
         <div class="hero-buttons">
-            <a href="#/converter" class="btn btn-primary">Конвертер</a>
-            <a href="#/checker" class="btn btn-outline">Чекер</a>
-            <a href="#/admin" class="btn btn-outline">Админ</a>
+            <a href="#/converter" class="btn btn-primary btn-large">Конвертер</a>
+            <a href="#/checker" class="btn btn-outline btn-large">Чекер</a>
+            <a href="#/admin" class="btn btn-blue btn-large">Админка</a>
         </div>
-    </div>
-</template>
+    </section>
+</div>
 
-<!-- PAGE: Converter -->
-<template id="page-converter">
-    <div class="terminal-card">
-        <div class="terminal-topbar">
-            <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
-            <span class="terminal-title">Подписки → VLESS</span>
-        </div>
-        <div class="card-body">
-            <div class="sub-method">
-                <div class="sub-method-header"><span class="sub-method-badge">1</span><span class="sub-method-title">URL подписки</span></div>
-                <div class="subscription-input-group">
-                    <input type="text" id="conv-url" class="subscription-url-input" placeholder="https://example.com/sub/uuid" onchange="saveConvUrl()">
-                    <button class="btn btn-blue" onclick="convertSubscription()">[ Конвертировать ]</button>
-                </div>
-                <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--white-muted);cursor:pointer;">
-                    <input type="checkbox" id="conv-local-proxy" style="width:auto;">
-                    Локальный прокси (<code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:3px;">python ssh-proxy.py</code>)
-                </label>
+<!-- ======== CONVERTER ======== -->
+<div id="page-converter" class="page">
+    <div style="padding:80px 20px 40px;max-width:800px;margin:0 auto">
+        <h1 style="font-size:24px;margin-bottom:8px;color:var(--gold)">Конвертер подписок</h1>
+        <p style="color:var(--white-muted);font-size:14px;margin-bottom:20px">
+            Загрузите VLESS подписку и экспортируйте в нужный формат
+        </p>
 
+        <div class="terminal-card">
+            <div class="terminal-topbar">
+                <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                <span class="terminal-title">subscription.sh</span>
             </div>
-            <div class="subscription-divider"><span>результат</span></div>
-            <div id="conv-result-section" class="result-section" style="display:none;">
-                <div id="conv-result"></div>
-            </div>
-            <div class="status-bar" id="conv-status">
-                <div class="dot-status"></div>
-                <span id="conv-status-text">Введите URL подписки и нажмите Конвертировать</span>
-            </div>
-        </div>
-    </div>
-</template>
-
-<!-- PAGE: Checker -->
-<template id="page-checker">
-    <div class="terminal-card">
-        <div class="terminal-topbar">
-            <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
-            <span class="terminal-title">VLESS Server Checker</span>
-        </div>
-        <div class="card-body">
-            <div class="sub-method">
-                <div class="sub-method-header"><span class="sub-method-badge">1</span><span class="sub-method-title">Вставьте VLESS ссылки</span></div>
-                <textarea id="checker-input" style="min-height:80px;resize:vertical;margin-bottom:8px;" placeholder="vless://..."></textarea>
-                <div class="btn-row">
-                    <button class="btn btn-blue" onclick="addCheckerServer()">[ Добавить ]</button>
-                    <button class="btn btn-ghost" onclick="clearChecker()">[ Очистить ]</button>
-                    <button class="btn btn-primary" onclick="runChecker()" style="margin-left:auto;">[ Проверить ]</button>
-                </div>
-            </div>
-            <div class="subscription-divider"><span>серверы</span></div>
-            <div id="checker-list" class="server-list">
-                <div style="color:var(--white-muted);text-align:center;padding:20px;font-size:13px;">Нет серверов для проверки</div>
-            </div>
-            <div class="status-bar" id="checker-status">
-                <div class="dot-status"></div>
-                <span id="checker-status-text">готово</span>
-            </div>
-        </div>
-    </div>
-</template>
-
-<!-- PAGE: Blog -->
-<template id="page-blog">
-    <div class="terminal-card">
-        <div class="terminal-topbar">
-            <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
-            <span class="terminal-title">// blog</span>
-        </div>
-        <div class="card-body">
-            <div id="blog-list" class="blog-list"></div>
-            <div id="blog-post-container"></div>
-        </div>
-    </div>
-</template>
-
-<!-- PAGE: Admin -->
-<template id="page-admin">
-    <div class="terminal-card">
-        <div class="terminal-topbar">
-            <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
-            <span class="terminal-title">IP Tools / Blog</span>
-        </div>
-        <div class="card-body">
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="ttyd">🖥️ OpenWRT (ttyd)</button>
-                <button class="tab-btn" data-tab="ip-tools">🌐 IP & Скорость</button>
-                <button class="tab-btn" data-tab="blog-editor">✏️ Блог</button>
-            </div>
-
-            <div id="ttyd" class="tab-content active">
+            <div class="card-body">
                 <div class="sub-method">
-                    <div class="sub-method-header"><span class="sub-method-badge">🖥️</span><span class="sub-method-title">Терминал OpenWRT (ttyd)</span></div>
+                    <div class="sub-method-header">
+                        <div class="sub-method-badge">1</div>
+                        <div class="sub-method-title">Ссылка на подписку</div>
+                    </div>
+                    <div class="subscription-input-group">
+                        <input id="sub-url" type="text" placeholder="https://example.com/sub/uuid">
+                        <button id="sub-fetch" class="btn btn-primary">Загрузить</button>
+                    </div>
+                    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:13px;color:var(--white-muted)">
+                        <input type="checkbox" id="sub-local-proxy">
+                        Локальный прокси (нужен <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px">python ssh-proxy.py</code>)
+                    </label>
+                </div>
+
+                <div id="sub-status" class="status-bar">
+                    <span class="dot-status"></span>
+                    <span>Введите URL и нажмите Загрузить</span>
+                </div>
+
+                <div id="vless-list" class="vless-list"></div>
+
+                <div class="btn-row">
+                    <button id="export-yaml" class="btn btn-outline">Koala Clash YAML</button>
+                    <button id="export-happ" class="btn btn-outline">Happ JSON</button>
+                    <button id="show-raw" class="btn btn-ghost">Сырой ответ</button>
+                </div>
+                <pre id="raw-response" class="raw-response"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======== CHECKER ======== -->
+<div id="page-checker" class="page">
+    <div style="padding:80px 20px 40px;max-width:800px;margin:0 auto">
+        <h1 style="font-size:24px;margin-bottom:8px;color:var(--gold)">Чекер серверов</h1>
+        <p style="color:var(--white-muted);font-size:14px;margin-bottom:20px">
+            Проверка доступности VLESS серверов
+        </p>
+        <div class="terminal-card">
+            <div class="terminal-topbar">
+                <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                <span class="terminal-title">ping.sh</span>
+            </div>
+            <div class="card-body">
+                <div class="subscription-input-group">
+                    <input id="checker-input" type="text" placeholder="vless://... или IP:порт">
+                    <button id="checker-btn" class="btn btn-primary">Проверить</button>
+                </div>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="#checker-regular">Обычный</button>
+                    <button class="tab-btn" data-tab="#checker-batch">Массовая</button>
+                </div>
+                <div id="checker-regular" class="tab-content active">
+                    <div id="checker-result" style="font-family:monospace;font-size:13px;margin-top:12px;padding:12px;background:rgba(0,0,0,0.2);border-radius:6px;min-height:40px;color:var(--white-muted)">
+                        Введите VLESS ссылку или IP:порт
+                    </div>
+                </div>
+                <div id="checker-batch" class="tab-content">
+                    <textarea id="checker-batch-input" rows="6" placeholder="vless://... один на строку"></textarea>
+                    <button id="checker-batch-btn" class="btn btn-outline" style="margin-top:8px">Проверить все</button>
+                    <div id="checker-batch-result" style="font-family:monospace;font-size:12px;margin-top:12px;min-height:40px"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======== BLOG ======== -->
+<div id="page-blog" class="page">
+    <div style="padding:80px 20px 40px;max-width:800px;margin:0 auto">
+        <h1 style="font-size:24px;margin-bottom:8px;color:var(--gold)">Блог</h1>
+        <p style="color:var(--white-muted);font-size:14px;margin-bottom:20px">Заметки о VLESS, OpenWRT и сетевых технологиях</p>
+        <div id="blog-list" class="blog-list">
+            <div style="color:var(--white-muted);font-size:13px">Загрузка...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ======== ADMIN ======== -->
+<div id="page-admin" class="page">
+    <div style="padding:80px 20px 40px;max-width:900px;margin:0 auto">
+        <h1 style="font-size:24px;margin-bottom:8px;color:var(--gold)">Панель управления</h1>
+        <p style="color:var(--white-muted);font-size:14px;margin-bottom:20px">OpenWRT терминал, IP инструменты, управление блогом</p>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="#admin-ttyd">OpenWRT terminal</button>
+            <button class="tab-btn" data-tab="#admin-ip">IP tools</button>
+            <button class="tab-btn" data-tab="#admin-speedy">Speed test</button>
+            <button class="tab-btn" data-tab="#admin-blog">Blog editor</button>
+        </div>
+
+        <!-- TTYD -->
+        <div id="admin-ttyd" class="tab-content active">
+            <div class="terminal-card">
+                <div class="terminal-topbar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="terminal-title">ttyd → OpenWRT</span></div>
+                <div class="card-body">
                     <div class="ssh-form-row">
                         <div class="ssh-form-field">
-                            <label>URL ttyd</label>
-                            <input type="text" id="ttyd-url" class="subscription-url-input" value="http://192.168.2.1:7681" onchange="saveTtydUrl()">
+                            <label>Хост</label>
+                            <input id="ttyd-host" value="192.168.2.1">
                         </div>
-                        <div class="ssh-form-field" style="max-width:200px;">
-                            <label>&nbsp;</label>
-                            <button class="btn btn-blue" onclick="openTtyd()" style="width:100%;">[ Открыть ]</button>
+                        <div class="ssh-form-field">
+                            <label>Порт</label>
+                            <input id="ttyd-port" value="7681">
+                        </div>
+                        <div style="display:flex;align-items:flex-end">
+                            <button id="ttyd-connect" class="btn btn-primary">Подключиться</button>
                         </div>
                     </div>
-                    <div style="margin-top:8px;font-size:12px;color:var(--white-muted);">
-                        Установка: <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:3px;">opkg update && opkg install ttyd && ttyd -p 7681 login</code>
-                    </div>
-                </div>
-                <div class="subscription-divider"><span>терминал</span></div>
-                <div id="ttyd-container" style="border:1px solid rgba(255,215,0,0.15);border-radius:8px;overflow:hidden;background:#0b1120;min-height:400px;display:none;">
-                    <iframe id="ttyd-iframe" style="width:100%;height:500px;border:0;background:#0b1120;"></iframe>
-                </div>
-                <div class="status-bar" id="ttyd-status">
-                    <div class="dot-status"></div>
-                    <span id="ttyd-status-text">Введите URL и нажмите Открыть</span>
+                    <iframe id="ttyd-frame" style="width:100%;height:500px;border:none;border-radius:6px;margin-top:12px;display:none"></iframe>
                 </div>
             </div>
+        </div>
 
-            <div id="ip-tools" class="tab-content">
-                <div class="sub-method">
-                    <div class="sub-method-header"><span class="sub-method-badge">1</span><span class="sub-method-title">Мой IP и геолокация</span></div>
-                    <div class="ip-info-grid" id="ip-info-grid">
-                        <div class="ip-info-item"><div class="ip-info-label">IP адрес</div><div class="ip-info-value" id="my-ip">—</div></div>
-                        <div class="ip-info-item"><div class="ip-info-label">Страна</div><div class="ip-info-value" id="my-country">—</div></div>
-                        <div class="ip-info-item"><div class="ip-info-label">Город</div><div class="ip-info-value" id="my-city">—</div></div>
-                        <div class="ip-info-item"><div class="ip-info-label">Провайдер</div><div class="ip-info-value" id="my-isp">—</div></div>
-                        <div class="ip-info-item"><div class="ip-info-label">Координаты</div><div class="ip-info-value" id="my-coords">—</div></div>
-                        <div class="ip-info-item"><div class="ip-info-label">Часовой пояс</div><div class="ip-info-value" id="my-timezone">—</div></div>
-                    </div>
-                    <div class="btn-row"><button class="btn btn-blue" onclick="detectMyIp()">[ Обновить ]</button><button class="btn btn-ghost" onclick="copyIpInfo()">[ Копировать ]</button></div>
-                </div>
-                <div class="subscription-divider"><span>или</span></div>
-                <div class="sub-method">
-                    <div class="sub-method-header"><span class="sub-method-badge">2</span><span class="sub-method-title">Проверить любой IP</span></div>
+        <!-- IP tools -->
+        <div id="admin-ip" class="tab-content">
+            <div class="terminal-card">
+                <div class="terminal-topbar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="terminal-title">ip-lookup</span></div>
+                <div class="card-body">
                     <div class="subscription-input-group">
-                        <input type="text" id="check-ip-input" class="subscription-url-input" placeholder="8.8.8.8 или example.com">
-                        <button class="btn btn-blue" onclick="checkAnyIp()">[ Проверить ]</button>
+                        <input id="ip-input" type="text" placeholder="IP адрес">
+                        <button id="ip-lookup" class="btn btn-primary">Поиск</button>
                     </div>
-                    <div id="check-ip-result" class="ip-result-block" style="display:none;"></div>
-                </div>
-                <div class="subscription-divider"><span>или</span></div>
-                <div class="sub-method">
-                    <div class="sub-method-header"><span class="sub-method-badge">3</span><span class="sub-method-title">Тест скорости</span></div>
-                    <div class="speed-test-panel">
-                        <div class="speedometer-container">
-                            <svg class="speedometer-svg" viewBox="0 0 400 240">
-                                <path d="M 40 200 A 160 160 0 0 1 360 200" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="20" stroke-linecap="round"/>
-                                <path id="speed-arc" d="M 40 200 A 160 160 0 0 1 360 200" fill="none" stroke="url(#speedGradient)" stroke-width="20" stroke-linecap="round" stroke-dasharray="502" stroke-dashoffset="502"/>
-                                <defs><linearGradient id="speedGradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="50%" stop-color="#22c55e"/><stop offset="100%" stop-color="#f59e0b"/></linearGradient></defs>
-                                <g class="speed-ticks">
-                                    <text x="30" y="220" fill="#6b7280" font-size="10" font-family="monospace">0</text>
-                                    <text x="80" y="100" fill="#6b7280" font-size="10" font-family="monospace">100</text>
-                                    <text x="200" y="50" fill="#6b7280" font-size="10" font-family="monospace" text-anchor="middle">500</text>
-                                    <text x="320" y="100" fill="#6b7280" font-size="10" font-family="monospace">1000</text>
-                                    <text x="365" y="220" fill="#6b7280" font-size="10" font-family="monospace">2000</text>
-                                </g>
-                                <text id="speed-value-text" x="200" y="170" fill="#e5e7eb" font-size="48" font-weight="800" font-family="monospace" text-anchor="middle">0</text>
-                                <text x="200" y="195" fill="#6b7280" font-size="12" font-family="monospace" text-anchor="middle" letter-spacing="2">Мбит/с</text>
-                                <line id="speed-needle" x1="200" y1="200" x2="200" y2="60" stroke="#ef4444" stroke-width="2" stroke-linecap="round" transform="rotate(-90 200 200)" style="transition: transform 0.3s ease-out;"/>
-                                <circle cx="200" cy="200" r="8" fill="#ef4444"/>
-                                <circle cx="200" cy="200" r="4" fill="#0b1120"/>
-                            </svg>
-                        </div>
-                        <div class="speed-label" id="speed-label">Готов к тесту</div>
-                        <div class="speed-stats">
-                            <div class="speed-stat"><div class="speed-stat-label">↓ Download</div><div class="speed-stat-value" id="speed-download">—</div></div>
-                            <div class="speed-stat"><div class="speed-stat-label">↑ Upload</div><div class="speed-stat-value" id="speed-upload">—</div></div>
-                            <div class="speed-stat"><div class="speed-stat-label">📡 Ping</div><div class="speed-stat-value" id="speed-ping">—</div></div>
-                            <div class="speed-stat"><div class="speed-stat-label">📊 Jitter</div><div class="speed-stat-value" id="speed-jitter">—</div></div>
-                        </div>
-                        <button class="btn btn-blue btn-large" onclick="runSpeedTest()" id="speed-test-btn">[ Измерить ]</button>
-                    </div>
+                    <pre id="ip-result" style="background:rgba(0,0,0,0.2);border-radius:6px;padding:12px;margin-top:10px;font-size:11px;overflow:auto;max-height:200px;color:var(--white-muted)"></pre>
                 </div>
             </div>
+        </div>
 
-            <div id="blog-editor" class="tab-content">
-                <div id="blog-auth-section">
-                    <div class="sub-method">
-                        <div class="sub-method-header"><span class="sub-method-badge">🔐</span><span class="sub-method-title">Авторизация через GitHub</span></div>
-                        <button class="btn btn-blue" onclick="loginWithGithub()">[ Войти через GitHub ]</button>
-                    </div>
+        <!-- Speed test -->
+        <div id="admin-speedy" class="tab-content">
+            <div class="terminal-card">
+                <div class="terminal-topbar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="terminal-title">speedometer</span></div>
+                <div class="card-body" style="text-align:center">
+                    <canvas id="speed-canvas" width="280" height="280" style="margin:0 auto 12px"></canvas>
+                    <div style="font-size:32px;font-weight:700;color:var(--gold)" id="speed-value">0</div>
+                    <div style="font-size:14px;color:var(--white-muted)" id="speed-unit">Mbps</div>
+                    <button id="speed-test" class="btn btn-primary" style="margin-top:12px">Тест скорости</button>
                 </div>
-                <div id="blog-editor-section" style="display:none;">
-                    <div class="sub-method">
-                        <div class="sub-method-header"><span class="sub-method-badge">✏️</span><span class="sub-method-title">Редактор постов</span></div>
-                        <button class="btn btn-ghost" onclick="logoutBlog()" style="font-size:12px;margin-bottom:12px;">[ Выйти ]</button>
-                        <div class="blog-editor-form">
-                            <input type="text" id="blog-post-title" placeholder="Заголовок">
-                            <div class="blog-editor-form-row">
-                                <input type="text" id="blog-post-slug" placeholder="slug (оставьте пустым для автогенерации)">
-                                <button class="btn btn-ghost" onclick="generateSlug()" style="font-size:12px;white-space:nowrap;">[ Сгенерировать slug ]</button>
-                            </div>
-                            <textarea id="blog-post-content" placeholder="Содержимое (Markdown/HTML)"></textarea>
-                            <input type="text" id="blog-post-tags" placeholder="Теги (через запятую)">
-                            <div class="btn-row">
-                                <button class="btn btn-blue" onclick="saveBlogPost()" id="blog-save-btn">[ Опубликовать ]</button>
-                                <button class="btn btn-ghost" onclick="clearBlogEditor()">[ Очистить ]</button>
-                            </div>
-                            <div id="blog-editor-id" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- Blog editor -->
+        <div id="admin-blog" class="tab-content">
+            <div class="terminal-card">
+                <div class="terminal-topbar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="terminal-title">blog-editor</span></div>
+                <div class="card-body">
+                    <button id="gh-login" class="btn btn-outline" style="margin-bottom:12px">🔑 GitHub Login</button>
+                    <div class="ssh-form-row">
+                        <div class="ssh-form-field">
+                            <label>Заголовок</label>
+                            <input id="post-title" placeholder="Заголовок поста">
                         </div>
-                        <div class="status-bar" id="blog-editor-status">
-                            <div class="dot-status"></div>
-                            <span>готово</span>
+                        <div class="ssh-form-field">
+                            <label>Slug</label>
+                            <input id="post-slug" placeholder="my-post-slug">
                         </div>
                     </div>
-                    <div class="subscription-divider"><span>посты</span></div>
-                    <div id="blog-editor-list" class="blog-editor-list"></div>
+                    <label style="font-size:12px;color:var(--white-muted);margin-top:8px;display:block">Содержание (HTML)</label>
+                    <textarea id="blog-editor" rows="8" style="margin-top:4px" placeholder="HTML контент..."></textarea>
+                    <div class="btn-row">
+                        <button id="blog-save" class="btn btn-primary">Опубликовать</button>
+                        <button id="blog-load" class="btn btn-ghost">Обновить список</button>
+                    </div>
+                    <div id="blog-preview" style="background:rgba(0,0,0,0.2);border-radius:6px;padding:12px;margin-top:10px;font-size:13px;min-height:40px;color:var(--white-muted)"></div>
+                    <div id="post-list" style="margin-top:12px"></div>
                 </div>
             </div>
         </div>
     </div>
-</template>
+</div>
 
 <footer>
-    <p>VLESS Tools · Сделано с ❤️</p>
-    <button class="btn btn-ghost" onclick="openSupport()" style="margin-top:8px;font-size:12px;">✦ Поддержать проект</button>
+    VLESS Tools &mdash; для личного использования
 </footer>
 
 <script src="common.js"></script>
-<script src="app.js"></script>
 <script src="converter.js"></script>
 <script src="checker.js"></script>
 <script src="blog.js"></script>
 <script src="admin.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

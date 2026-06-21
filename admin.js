@@ -1,272 +1,171 @@
-// ==================== TTYD (OpenWRT) ====================
-function saveTtydUrl() {
-    const el = document.getElementById('ttyd-url');
-    if (!el) return;
-    try { localStorage.setItem('ttyd_url', el.value.trim()); } catch {}
-}
-function getTtydUrl() {
-    const el = document.getElementById('ttyd-url');
-    if (el) return el.value.trim();
-    try { return localStorage.getItem('ttyd_url') || 'http://192.168.2.1:7681'; } catch { return 'http://192.168.2.1:7681'; }
-}
-function openTtyd() {
-    const url = getTtydUrl();
-    if (!url) { setStatus('ttyd-status', 'Введите URL ttyd', 'err'); return; }
-    const container = document.getElementById('ttyd-container');
-    const iframe = document.getElementById('ttyd-iframe');
-    if (!container || !iframe) return;
-    container.style.display = 'block';
-    iframe.src = url;
-    setStatus('ttyd-status', `Открыто: ${url}`, 'ok');
-    document.getElementById('ttyd-status-text').textContent = `Открыто: ${url}`;
-}
+function initAdmin() {
+    if (initAdmin._done) return;
+    initAdmin._done = true;
+    const token = sessionStorage.getItem('gh_token');
 
-// ==================== IP TOOLS ====================
-function detectMyIp() {
-    fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => {
-        document.getElementById('my-ip').textContent = d.ip;
-        return fetch(`http://ip-api.com/json/${d.ip}?fields=status,country,city,isp,lat,lon,timezone`);
-    }).then(r => r.json()).then(d => {
-        if (d.status === 'success') {
-            document.getElementById('my-country').textContent = d.country || '—';
-            document.getElementById('my-city').textContent = d.city || '—';
-            document.getElementById('my-isp').textContent = d.isp || '—';
-            document.getElementById('my-coords').textContent = d.lat && d.lon ? `${d.lat}, ${d.lon}` : '—';
-            document.getElementById('my-timezone').textContent = d.timezone || '—';
-        }
-    }).catch(() => {
-        document.getElementById('my-ip').textContent = 'Ошибка';
-    });
-}
-function copyIpInfo() {
-    const ip = document.getElementById('my-ip').textContent;
-    const country = document.getElementById('my-country').textContent;
-    const city = document.getElementById('my-city').textContent;
-    const isp = document.getElementById('my-isp').textContent;
-    navigator.clipboard.writeText(`IP: ${ip}\nСтрана: ${country}\nГород: ${city}\nПровайдер: ${isp}`);
-}
-function checkAnyIp() {
-    const input = document.getElementById('check-ip-input').value.trim();
-    if (!input) return;
-    const result = document.getElementById('check-ip-result');
-    result.style.display = 'block';
-    result.innerHTML = '<p style="color:var(--white-muted);">Проверка...</p>';
-    fetch(`http://ip-api.com/json/${encodeURIComponent(input)}?fields=status,country,city,isp,lat,lon,org,as,query,timezone`)
-        .then(r => r.json()).then(d => {
-            if (d.status !== 'success') { result.innerHTML = '<p style="color:#ef4444;">Не удалось получить информацию</p>'; return; }
-            result.innerHTML = `
-                <div class="ip-info-grid">
-                    <div class="ip-info-item"><div class="ip-info-label">IP</div><div class="ip-info-value">${d.query || '—'}</div></div>
-                    <div class="ip-info-item"><div class="ip-info-label">Страна</div><div class="ip-info-value">${d.country || '—'}</div></div>
-                    <div class="ip-info-item"><div class="ip-info-label">Город</div><div class="ip-info-value">${d.city || '—'}</div></div>
-                    <div class="ip-info-item"><div class="ip-info-label">Провайдер</div><div class="ip-info-value">${d.isp || d.org || '—'}</div></div>
-                    <div class="ip-info-item"><div class="ip-info-label">Координаты</div><div class="ip-info-value">${d.lat && d.lon ? d.lat+', '+d.lon : '—'}</div></div>
-                    <div class="ip-info-item"><div class="ip-info-label">Часовой пояс</div><div class="ip-info-value">${d.timezone || '—'}</div></div>
-                </div>`;
-        }).catch(() => { result.innerHTML = '<p style="color:#ef4444;">Ошибка запроса</p>'; });
-}
+    // -- Blog editor --
+    const editor = document.getElementById('blog-editor');
+    const preview = document.getElementById('blog-preview');
+    const saveBtn = document.getElementById('blog-save');
+    const loadBtn = document.getElementById('blog-load');
+    const postList = document.getElementById('post-list');
 
-// ==================== SPEED TEST ====================
-function runSpeedTest() {
-    const btn = document.getElementById('speed-test-btn');
-    const label = document.getElementById('speed-label');
-    if (!btn || !label) return;
-    btn.disabled = true;
-    btn.textContent = '[ Измерение... ]';
-    label.textContent = 'Тестирование скорости...';
-
-    const results = [];
-    const numDownloads = 6;
-    let completed = 0;
-    const urls = [
-        'https://proof.ovh.net/files/100Mb.dat',
-        'https://speedtest.tele2.net/100MB.zip',
-        'https://speed.hetzner.de/100MB.bin',
-    ];
-
-    function measureDownload(url) {
-        const s = Date.now();
-        return fetch(url, { mode: 'cors', cache: 'no-store' }).then(r => {
-            const reader = r.body.getReader();
-            let bytes = 0;
-            function read() {
-                return reader.read().then(({ done, value }) => {
-                    if (done) return bytes;
-                    bytes += value.length;
-                    return read();
-                });
-            }
-            return read().then(bytes => {
-                const elapsed = (Date.now() - s) / 1000;
-                if (elapsed > 0) results.push((bytes * 8) / elapsed / 1_000_000);
-            });
-        }).catch(() => {});
-    }
-
-    Promise.all(Array(numDownloads).fill(0).map(() => {
-        const url = urls[Math.floor(Math.random() * urls.length)];
-        return measureDownload(url).then(() => {
-            completed++;
-            const pct = Math.round((completed / numDownloads) * 100);
-            label.textContent = `Тестирование... ${pct}%`;
+    if (editor) {
+        editor.addEventListener('input', () => {
+            if (preview) preview.innerHTML = editor.value.replace(/\n/g, '<br>');
         });
-    })).then(() => {
-        const mbps = results.length > 0
-            ? (results.reduce((a, b) => a + b, 0) / results.length).toFixed(1)
-            : '0';
-        document.getElementById('speed-download').textContent = mbps + ' Мбит/с';
-        label.textContent = `Средняя скорость: ${mbps} Мбит/с`;
-        updateSpeedometer(parseFloat(mbps));
-        btn.disabled = false;
-        btn.textContent = '[ Измерить ]';
-    });
-}
-function updateSpeedometer(mbps) {
-    const needle = document.getElementById('speed-needle');
-    const valueText = document.getElementById('speed-value-text');
-    const arc = document.getElementById('speed-arc');
-    if (needle && valueText) {
-        const angle = Math.min(mbps / 2000, 1) * 180 - 90;
-        needle.style.transform = `rotate(${angle} 200 200)`;
-        valueText.textContent = Math.round(mbps);
     }
-    if (arc) {
-        const pct = Math.min(mbps / 2000, 1);
-        arc.style.strokeDashoffset = `${502 - (502 * pct)}`;
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            if (!token) { showToast('Нет авторизации'); return; }
+            const title = document.getElementById('post-title').value.trim();
+            const slug = document.getElementById('post-slug').value.trim();
+            const content = editor.value.trim();
+            if (!title || !slug || !content) { showToast('Заполните все поля'); return; }
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Сохранение...';
+            try {
+                const resp = await fetch(`${BLOG_API_URL}/api/posts`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ title, slug, content }),
+                });
+                if (resp.ok) {
+                    showToast('Опубликовано');
+                    document.getElementById('post-title').value = '';
+                    document.getElementById('post-slug').value = '';
+                    editor.value = '';
+                    if (preview) preview.innerHTML = '';
+                    loadPosts();
+                } else {
+                    const err = await resp.text();
+                    showToast('Ошибка: ' + err);
+                }
+            } catch (e) {
+                showToast('Ошибка: ' + e.message);
+            }
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Опубликовать';
+        });
     }
-}
 
-// ==================== BLOG EDITOR ====================
-function checkBlogAuth() {
-    const token = (() => { try { return localStorage.getItem('blog_token'); } catch { return null; } })();
-    if (token) {
-        document.getElementById('blog-auth-section').style.display = 'none';
-        document.getElementById('blog-editor-section').style.display = 'block';
-        loadBlogEditorList();
+    async function loadPosts() {
+        if (!postList) return;
+        try {
+            const resp = await fetch(`${BLOG_API_URL}/api/posts`);
+            const posts = await resp.json();
+            postList.innerHTML = '';
+            if (posts.length === 0) { postList.innerHTML = '<div style="color:var(--white-muted);font-size:13px">Нет постов</div>'; return; }
+            for (const p of posts) {
+                const div = document.createElement('div');
+                div.className = 'blog-card';
+                div.innerHTML = `
+                    <div class="blog-card-title">${escapeHtml(p.title)}</div>
+                    <div class="blog-card-excerpt">${escapeHtml(p.content.substring(0, 200))}${p.content.length > 200 ? '...' : ''}</div>
+                    <div class="blog-card-meta">${new Date(p.created_at).toLocaleString('ru-RU')}</div>
+                `;
+                div.addEventListener('click', () => {
+                    document.getElementById('post-title').value = p.title;
+                    document.getElementById('post-slug').value = p.slug;
+                    editor.value = p.content;
+                    if (preview) preview.innerHTML = p.content.replace(/\n/g, '<br>');
+                });
+                postList.appendChild(div);
+            }
+        } catch {}
     }
-}
-function loginWithGithub() {
-    const currentUrl = window.location.href.split('&token=')[0];
-    const redirectUrl = currentUrl.startsWith('file://') ? 'https://ssh-svoboda.ru/' : currentUrl;
-    const authUrl = `${getBlogApiUrl()}/auth/github/login?redirect=${encodeURIComponent(redirectUrl)}`;
-    window.location.href = authUrl;
-}
-function logoutBlog() {
-    try { localStorage.removeItem('blog_token'); } catch {}
-    document.getElementById('blog-auth-section').style.display = 'block';
-    document.getElementById('blog-editor-section').style.display = 'none';
-}
-function getToken() { try { return localStorage.getItem('blog_token'); } catch { return null; } }
-function saveBlogPost() {
-    const title = document.getElementById('blog-post-title').value.trim();
-    const content = document.getElementById('blog-post-content').value.trim();
-    const tags = document.getElementById('blog-post-tags').value.split(',').map(t => t.trim()).filter(Boolean);
-    const slug = document.getElementById('blog-post-slug').value.trim();
-    const editId = document.getElementById('blog-editor-id').textContent || null;
-    if (!title || !content) { setStatus('blog-editor-status', 'Заполните заголовок и содержимое', 'err'); return; }
 
-    const token = getToken();
-    if (!token) { setStatus('blog-editor-status', 'Требуется авторизация', 'err'); return; }
+    if (loadBtn) loadBtn.addEventListener('click', loadPosts);
+    loadPosts();
 
-    const method = editId ? 'PUT' : 'POST';
-    const url = editId ? `${getBlogApiUrl()}/api/posts/${editId}` : `${getBlogApiUrl()}/api/posts`;
+    // -- OAuth --
+    const oauthBtn = document.getElementById('gh-login');
+    if (oauthBtn) {
+        if (token) { oauthBtn.textContent = '✅ GitHub'; oauthBtn.disabled = true; }
+        oauthBtn.addEventListener('click', () => {
+            const clientId = 'Ov23liQkpqhGrtqF4sv6';
+            const redirect = location.origin + location.pathname + '#/admin';
+            window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirect}&scope=repo`;
+        });
+    }
 
-    fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-            title, content,
-            slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-            tags,
-            published: true,
-        }),
-    }).then(r => r.json()).then(result => {
-        if (result.error) { setStatus('blog-editor-status', `Ошибка: ${result.error}`, 'err'); return; }
-        setStatus('blog-editor-status', 'Пост сохранён!', 'ok');
-        clearBlogEditor();
-        loadBlogEditorList();
-    }).catch(() => setStatus('blog-editor-status', 'Ошибка сети', 'err'));
-}
-function loadBlogEditorList() {
-    const list = document.getElementById('blog-editor-list');
-    if (!list) return;
-    list.innerHTML = '<p style="color:var(--white-muted);">Загрузка...</p>';
-    const token = getToken();
-    fetch(`${getBlogApiUrl()}/api/posts`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-    }).then(r => r.json()).then(posts => {
-        if (!Array.isArray(posts) || posts.length === 0) {
-            list.innerHTML = '<p style="color:var(--white-muted);">Нет постов</p>';
-            return;
+    // -- ttyd --
+    const ttydFrame = document.getElementById('ttyd-frame');
+    if (ttydFrame) {
+        const connectBtn = document.getElementById('ttyd-connect');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', () => {
+                const host = document.getElementById('ttyd-host').value || '192.168.2.1';
+                const port = document.getElementById('ttyd-port').value || '7681';
+                ttydFrame.src = `http://${host}:${port}/`;
+                ttydFrame.style.display = 'block';
+            });
         }
-        list.innerHTML = posts.map(p => `
-            <div class="blog-editor-item">
-                <div>
-                    <div class="blog-editor-item-title">${escapeHtml(p.title)}</div>
-                    <div class="blog-editor-item-meta">${p.slug} · ${new Date(p.created_at).toLocaleDateString()}</div>
-                </div>
-                <div class="blog-editor-item-actions">
-                    <button class="btn btn-ghost" onclick="editBlogPost('${p.id}')" style="padding:4px 12px;font-size:12px;">✏️</button>
-                    <button class="btn btn-ghost" onclick="deleteBlogPost('${p.id}')" style="padding:4px 12px;font-size:12px;">🗑️</button>
-                </div>
-            </div>
-        `).join('');
-    }).catch(() => { list.innerHTML = '<p style="color:#ef4444;">Ошибка загрузки</p>'; });
-}
-function editBlogPost(id) {
-    const token = getToken();
-    if (!token) return;
-    fetch(`${getBlogApiUrl()}/api/posts/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-    }).then(r => r.json()).then(post => {
-        if (post.error) return;
-        document.getElementById('blog-post-title').value = post.title || '';
-        document.getElementById('blog-post-content').value = post.content || '';
-        document.getElementById('blog-post-tags').value = (post.tags || []).join(', ');
-        document.getElementById('blog-post-slug').value = post.slug || '';
-        document.getElementById('blog-editor-id').textContent = post.id || '';
-        document.getElementById('blog-save-btn').textContent = '[ Обновить ]';
-    });
-}
-function deleteBlogPost(id) {
-    if (!confirm('Удалить пост?')) return;
-    const token = getToken();
-    if (!token) return;
-    fetch(`${getBlogApiUrl()}/api/posts/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-    }).then(r => r.json()).then(result => {
-        if (result.error) { alert('Ошибка: ' + result.error); return; }
-        loadBlogEditorList();
-    }).catch(() => alert('Ошибка сети'));
-}
-function generateSlug() {
-    const title = document.getElementById('blog-post-title').value.trim();
-    if (!title) return;
-    const slug = title.toLowerCase()
-        .replace(/[^a-z0-9а-яё\s-]/g, '')
-        .replace(/[а-яё]/g, c => 'aoekmhoptcuyx'.split('')[Math.floor(Math.random() * 14)])
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-    document.getElementById('blog-post-slug').value = slug || 'post-' + Date.now();
-}
-function clearBlogEditor() {
-    document.getElementById('blog-post-title').value = '';
-    document.getElementById('blog-post-content').value = '';
-    document.getElementById('blog-post-tags').value = '';
-    document.getElementById('blog-post-slug').value = '';
-    document.getElementById('blog-editor-id').textContent = '';
-    document.getElementById('blog-save-btn').textContent = '[ Опубликовать ]';
-    setStatus('blog-editor-status', 'готово', '');
-}
-
-// ==================== INIT ====================
-function initAdminTabs() {
-    detectMyIp();
-    const ttydInput = document.getElementById('ttyd-url');
-    if (ttydInput) {
-        try { const saved = localStorage.getItem('ttyd_url'); if (saved) ttydInput.value = saved; } catch {}
     }
-    checkBlogAuth();
+
+    // -- IP tools --
+    const ipBtn = document.getElementById('ip-lookup');
+    const ipResult = document.getElementById('ip-result');
+    if (ipBtn) {
+        ipBtn.addEventListener('click', async () => {
+            const ip = document.getElementById('ip-input').value.trim();
+            if (!ip) return;
+            ipBtn.disabled = true;
+            ipResult.textContent = 'Поиск...';
+            try {
+                const resp = await fetch(`${BLOG_API_URL}/api/ip?ip=${encodeURIComponent(ip)}`);
+                const data = await resp.json();
+                ipResult.textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                ipResult.textContent = 'Ошибка: ' + e.message;
+            }
+            ipBtn.disabled = false;
+        });
+    }
+
+    // -- Speed test (speedometer) --
+    const speedBtn = document.getElementById('speed-test');
+    if (speedBtn) {
+        const speedCanvas = document.getElementById('speed-canvas');
+        const speedVal = document.getElementById('speed-value');
+        const speedUnit = document.getElementById('speed-unit');
+
+        speedBtn.addEventListener('click', () => {
+            if (!speedCanvas || !speedVal || !speedUnit) return;
+            const ctx = speedCanvas.getContext('2d');
+            const w = speedCanvas.width = 280, h = speedCanvas.height = 280;
+            const cx = w / 2, cy = h / 2, r = 110;
+            let angle = 0;
+            speedVal.textContent = '0';
+            speedUnit.textContent = 'Mbps';
+
+            const interval = setInterval(() => {
+                angle += 0.02;
+                if (angle > Math.PI * 1.5) { clearInterval(interval); speedBtn.disabled = false; return; }
+                const speed = Math.round((angle / (Math.PI * 1.5)) * 500);
+                speedVal.textContent = speed;
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.strokeStyle = 'rgba(255,215,0,0.1)';
+                ctx.lineWidth = 12;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0.75 * Math.PI, 2.25 * Math.PI);
+                ctx.stroke();
+
+                const grad = ctx.createLinearGradient(0, 0, w, h);
+                grad.addColorStop(0, '#22c55e');
+                grad.addColorStop(0.5, '#FFD700');
+                grad.addColorStop(1, '#ef4444');
+                ctx.strokeStyle = grad;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0.75 * Math.PI, 0.75 * Math.PI + angle);
+                ctx.stroke();
+
+                ctx.fillStyle = 'var(--white)';
+                ctx.font = 'bold 14px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('DOWNLOAD', cx, cy + 60);
+            }, 30);
+        });
+    }
 }
