@@ -1,183 +1,207 @@
-let results = [];
+let converterResult = [];
 
-function initConverterTabs() {
-    document.querySelector('#subscription-file')?.addEventListener('change', handleFileSelect);
-    setupFileDropZone();
-}
-function handleFileSelect(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    setStatus('statusBar', 'Чтение файла...', 'ok');
-    const reader = new FileReader();
-    reader.onload = ev => {
-        document.getElementById('subscription-raw').value = ev.target.result;
-        setStatus('statusBar', 'Файл загружен. Нажмите Обработать.', 'ok');
-    };
-    reader.readAsText(file);
-}
-function setupFileDropZone() {
-    const zone = document.getElementById('file-drop-zone');
-    if (!zone) return;
-    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
-    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-    zone.addEventListener('drop', e => {
-        e.preventDefault();
-        zone.classList.remove('dragover');
-        const file = e.dataTransfer.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = ev => {
-                document.getElementById('subscription-raw').value = ev.target.result;
-                setStatus('statusBar', 'Файл загружен.', 'ok');
-            };
-            reader.readAsText(file);
-        }
-    });
-}
-function loadSubscription() {
-    const url = document.getElementById('subscription-url').value.trim();
-    if (!url) { setStatus('statusBar', 'Введите URL подписки', 'err'); return; }
-    setStatus('statusBar', 'Загрузка...', 'ok');
-    fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`)
-        .then(r => r.ok ? r.text() : Promise.reject('HTTP ' + r.status))
-        .then(text => {
-            document.getElementById('subscription-raw').value = text;
-            setStatus('statusBar', 'Загружено. Нажмите Обработать.', 'ok');
-        })
-        .catch(() => setStatus('statusBar', 'Ошибка загрузки. Попробуйте вручную.', 'err'));
-}
-function parseSubscriptionManual() {
-    const raw = document.getElementById('subscription-raw').value.trim();
-    if (!raw) { setStatus('statusBar', 'Нет данных', 'err'); return; }
-    setStatus('statusBar', 'Парсинг...', 'ok');
-    const links = extractVlessLinks(raw);
-    displayResults(links);
-}
-function convert() {
-    const koala = document.getElementById('koala-input')?.value.trim();
-    const happ = document.getElementById('happ-input')?.value.trim();
-    if (!koala && !happ) { setStatus('statusBar', 'Нет данных для конвертации', 'err'); return; }
-    setStatus('statusBar', 'Конвертация...', 'ok');
-    let links = [];
-    if (koala) links = links.concat(parseKoalaYaml(koala));
-    if (happ) links = links.concat(parseHappJson(happ));
-    displayResults(links);
-}
-function extractVlessLinks(text) {
-    const links = [];
-    const vlessRe = /vless:\/\/[^\s<>"']+/g;
-    let m;
-    while ((m = vlessRe.exec(text)) !== null) links.push(m[0]);
-    if (links.length === 0) {
-        try {
-            const decoded = atob(text);
-            const m2 = decoded.match(vlessRe);
-            if (m2) links.push(...m2);
-        } catch {}
+function initConverter() {
+    const input = document.getElementById('conv-url');
+    if (input) {
+        try { const saved = sessionStorage.getItem('conv_url'); if (saved) input.value = saved; } catch {}
     }
-    if (links.length === 0) {
-        try {
-            const json = JSON.parse(text);
-            const extract = (obj) => {
-                if (!obj || typeof obj !== 'object') return;
-                if (obj.vless || obj.vmess) links.push(obj.vless || obj.vmess);
-                Object.values(obj).forEach(v => extract(v));
-            };
-            extract(json);
-        } catch {}
-    }
-    return links;
 }
-function parseKoalaYaml(text) {
-    const links = [];
-    const vlessRe = /vless:\/\/[^\s<>"']+/g;
-    const m = text.match(vlessRe);
-    if (m) links.push(...m);
-    return links;
+
+function saveConvUrl() {
+    const el = document.getElementById('conv-url');
+    if (!el) return;
+    try { sessionStorage.setItem('conv_url', el.value.trim()); } catch {}
 }
-function parseHappJson(text) {
-    const links = [];
+
+async function convertSubscription() {
+    const input = document.getElementById('conv-url');
+    const format = document.getElementById('conv-format')?.value || 'vless';
+    const resultSection = document.getElementById('conv-result-section');
+    const resultDiv = document.getElementById('conv-result');
+
+    if (!input || !resultSection || !resultDiv) return;
+
+    const url = input.value.trim();
+    if (!url) { setStatus('conv-status', 'Введите URL подписки', 'err'); return; }
+
+    setStatus('conv-status', 'Загрузка подписки...', 'ok');
+    resultSection.style.display = 'none';
+    resultDiv.innerHTML = '';
+    converterResult = [];
+
+    const apiUrl = getBlogApiUrl();
+    const proxyUrl = `${apiUrl}/?url=${encodeURIComponent(url)}`;
+
     try {
-        const json = JSON.parse(text);
-        const walk = (obj) => {
-            if (!obj || typeof obj !== 'object') return;
-            if (obj.protocol === 'vless' && obj.settings?.vnext) {
-                obj.settings.vnext.forEach(vn => {
-                    (vn.users || []).forEach(u => {
-                        const p = obj.port || 443;
-                        const s = obj.streamSettings || {};
-                        const params = new URLSearchParams({
-                            type: s.network || 'tcp', security: obj.security || 'tls', flow: u.flow || '',
-                            fp: s.fingerprint || '', pbk: s.realitySettings?.publicKey || '',
-                            sid: s.realitySettings?.shortId || '',
-                            sni: s.realitySettings?.serverName || s.tlsSettings?.serverName || '',
-                        });
-                        const link = `vless://${u.id}@${vn.address}:${p}?${params}#${vn.address}`;
-                        links.push(link);
-                    });
-                });
+        const resp = await fetch(proxyUrl);
+        if (!resp.ok) {
+            const text = await resp.text();
+            throw new Error(`HTTP ${resp.status}: ${text.substring(0, 200)}`);
+        }
+
+        const text = await resp.text();
+
+        // Parse subscription info from headers
+        const userInfo = resp.headers.get('subscription-userinfo');
+        const profileTitle = resp.headers.get('profile-title');
+
+        // Parse VLESS links
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        for (const line of lines) {
+            if (line.startsWith('vless://')) {
+                converterResult.push(line);
             }
-            Object.values(obj).forEach(v => walk(v));
-        };
-        walk(json);
-    } catch {}
-    return links;
-}
-function displayResults(linkList) {
-    results = linkList;
-    const section = document.getElementById('result-section');
-    const list = document.getElementById('results-list');
-    const count = document.getElementById('result-count');
-    if (!section || !list) return;
-    if (results.length === 0) {
-        setStatus('statusBar', 'VLESS-ссылки не найдены', 'err');
-        return;
-    }
-    setStatus('statusBar', `Найдено: ${results.length}`, 'ok');
-    section.style.display = 'block';
-    count.textContent = `Найдено: ${results.length} ссылок`;
-    list.innerHTML = results.map((link, i) => {
-        const name = link.split('#')[1] || `Server ${i + 1}`;
-        return `<div class="result-item">
-            <div class="result-item-header">
-                <span class="result-item-name">${escapeHtml(name)}</span>
-                <button class="copy-item-btn" onclick="copyItem(${i})">[ Копировать ]</button>
-            </div>
-            <textarea class="result-item-link" readonly>${escapeHtml(link)}</textarea>
+        }
+
+        if (converterResult.length === 0) {
+            // Maybe it's base64 encoded
+            try {
+                const decoded = atob(text.replace(/\s/g, ''));
+                const decodedLines = decoded.split('\n').map(l => l.trim()).filter(Boolean);
+                for (const line of decodedLines) {
+                    if (line.startsWith('vless://')) converterResult.push(line);
+                }
+            } catch {}
+        }
+
+        if (converterResult.length === 0) {
+            resultDiv.innerHTML = '<p style="color:var(--red);">Не найдено VLESS ссылок в подписке</p>';
+            resultSection.style.display = 'block';
+            setStatus('conv-status', 'Не найдено VLESS ссылок', 'err');
+            return;
+        }
+
+        let html = '';
+        if (userInfo) {
+            const parts = Object.fromEntries(userInfo.split(';').map(s => {
+                const [k, v] = s.trim().split('=');
+                return [k, v];
+            }));
+            html += `<div style="margin-bottom:12px;font-size:12px;color:var(--white-muted);">
+                📊 Использовано: ${formatBytes(parts.upload || 0)} ↑ / ${formatBytes(parts.download || 0)} ↓
+                ${parts.total ? `· Всего: ${formatBytes(parts.total)}` : ''}
+                ${parts.expire ? `· Истекает: ${new Date(parts.expire * 1000).toLocaleDateString()}` : ''}
+            </div>`;
+        }
+        if (profileTitle) {
+            html += `<div style="margin-bottom:12px;font-size:13px;color:var(--gold);">📁 ${escapeHtml(decodeURIComponent(profileTitle))}</div>`;
+        }
+        html += `<div style="margin-bottom:8px;font-size:12px;color:var(--white-muted);">Найдено серверов: ${converterResult.length}</div>`;
+        html += '<div class="vless-list">';
+
+        for (const link of converterResult) {
+            const parsed = parseVlessLink(link);
+            html += `<div class="vless-item" onclick="copyVless('${escapeHtml(link)}')" title="Нажмите чтобы скопировать">
+                <div class="vless-remark">${escapeHtml(parsed.remark || 'Без имени')}</div>
+                <div style="color:var(--white-muted);font-size:11px;">${escapeHtml(parsed.server || '')} · ${parsed.port || ''}</div>
+                <div style="color:var(--white-muted);font-size:11px;">${parsed.type || ''} · ${parsed.network || ''}${parsed.security ? ' · ' + parsed.security : ''}${parsed.encryption ? ' · ' + parsed.encryption : ''}</div>
+            </div>`;
+        }
+
+        html += '</div>';
+        html += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost" onclick="copyAllVless()" style="font-size:12px;">[ Копировать все ]</button>
+            <button class="btn btn-ghost" onclick="exportClash()" style="font-size:12px;">[ Koala Clash YAML ]</button>
+            <button class="btn btn-ghost" onclick="exportHapp()" style="font-size:12px;">[ Happ JSON ]</button>
         </div>`;
-    }).join('');
+
+        resultDiv.innerHTML = html;
+        resultSection.style.display = 'block';
+        setStatus('conv-status', `Готово: ${converterResult.length} серверов`, 'ok');
+
+    } catch (e) {
+        resultDiv.innerHTML = `<p style="color:var(--red);">Ошибка: ${escapeHtml(e.message)}</p>`;
+        resultSection.style.display = 'block';
+        setStatus('conv-status', 'Ошибка загрузки', 'err');
+    }
 }
-function copyItem(i) {
-    if (results[i] === undefined) return;
-    navigator.clipboard.writeText(results[i]).then(() => {
-        const btn = document.querySelectorAll('.copy-item-btn')[i];
-        if (btn) { btn.textContent = '[ Скопировано ]'; setTimeout(() => btn.textContent = '[ Копировать ]', 2000); }
+
+function parseVlessLink(link) {
+    try {
+        const u = new URL(link);
+        const params = Object.fromEntries(u.searchParams.entries());
+        const hash = u.hash.replace(/^#/, '');
+        return {
+            id: u.username,
+            server: u.hostname,
+            port: u.port,
+            encryption: params.encryption || 'none',
+            type: params.type || 'tcp',
+            network: params.network || 'tcp',
+            security: params.security || '',
+            remark: decodeURIComponent(hash) || decodeURIComponent(u.searchParams.get('remark') || ''),
+        };
+    } catch {
+        return { remark: link.substring(0, 60) };
+    }
+}
+
+function formatBytes(bytes) {
+    const n = parseInt(bytes);
+    if (isNaN(n)) return bytes;
+    if (n >= 1e12) return (n / 1e12).toFixed(1) + ' TB';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + ' GB';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + ' MB';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + ' KB';
+    return n + ' B';
+}
+
+function copyVless(link) {
+    navigator.clipboard.writeText(link).then(() => {
+        showToast('✓ VLESS скопирована');
+    }).catch(() => {
+        prompt('Копировать вручную:', link);
     });
 }
-function copyAll() {
-    navigator.clipboard.writeText(results.join('\n'));
-    const btn = document.querySelector('.result-actions .btn-ghost');
-    if (btn) { btn.textContent = '[ Скопировано ]'; setTimeout(() => btn.textContent = '[ Копировать все ]', 2000); }
+
+function copyAllVless() {
+    const all = converterResult.join('\n');
+    navigator.clipboard.writeText(all).then(() => {
+        showToast(`✓ ${converterResult.length} VLESS скопировано`);
+    }).catch(() => {
+        prompt('Копировать вручную:', all);
+    });
 }
-function downloadAll() {
-    const blob = new Blob([results.join('\n')], { type: 'text/plain' });
+
+function exportClash() {
+    let yaml = 'proxies:\n';
+    for (const link of converterResult) {
+        const p = parseVlessLink(link);
+        const name = (p.remark || 'server').replace(/[^a-zA-Z0-9_\-\u0400-\u04FF]/g, '_');
+        yaml += `  - name: ${name}\n    type: vless\n    server: ${p.server || '127.0.0.1'}\n    port: ${p.port || 443}\n    uuid: ${p.id || ''}\n    encryption: ${p.encryption || 'none'}\n`;
+        if (p.network === 'ws' || p.network === 'websocket') {
+            yaml += `    network: ws\n    ws-opts:\n      path: "${p.searchParams?.path || '/'}"\n      headers:\n        Host: "${p.server}"\n`;
+        } else {
+            yaml += `    network: ${p.network || 'tcp'}\n`;
+        }
+        if (p.security === 'reality') yaml += '    reality: true\n';
+        if (p.security === 'tls') yaml += '    tls: true\n    skip-cert-verify: true\n';
+    }
+    downloadText(yaml, 'clash-config.yaml', 'text/yaml');
+}
+
+function exportHapp() {
+    const servers = converterResult.map(link => {
+        const p = parseVlessLink(link);
+        return {
+            name: p.remark || 'Server',
+            server: p.server,
+            port: parseInt(p.port) || 443,
+            uuid: p.id || '',
+            encryption: p.encryption || 'none',
+            network: p.network || 'tcp',
+            security: p.security || '',
+        };
+    });
+    const json = JSON.stringify({ version: 2, servers }, null, 2);
+    downloadText(json, 'happ-config.json', 'application/json');
+}
+
+function downloadText(text, filename, mime) {
+    const blob = new Blob([text], { type: mime });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'vless-links.txt';
+    a.download = filename;
     a.click();
-}
-function clearAll() {
-    results = [];
-    document.getElementById('result-section').style.display = 'none';
-    document.getElementById('subscription-raw').value = '';
-    setStatus('statusBar', 'очищено', '');
-}
-function clearChecker() { document.getElementById('vless-input').value = ''; setStatus('statusBar', 'очищено', ''); }
-function toggleDebug() {
-    const panel = document.getElementById('debug-panel');
-    const text = document.getElementById('debug-toggle-text');
-    if (!panel) return;
-    const show = panel.style.display !== 'block';
-    panel.style.display = show ? 'block' : 'none';
-    if (text) text.textContent = show ? '▼ Скрыть диагностику' : '▶ Показать диагностику';
+    URL.revokeObjectURL(a.href);
 }

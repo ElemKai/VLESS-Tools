@@ -75,12 +75,8 @@ function runSpeedTest() {
     btn.textContent = '[ Измерение... ]';
     label.textContent = 'Тестирование скорости...';
 
-    const chunks = [];
-    let totalBytes = 0;
-    const startTime = Date.now();
     const results = [];
     const numDownloads = 6;
-
     let completed = 0;
     const urls = [
         'https://proof.ovh.net/files/100Mb.dat',
@@ -115,7 +111,6 @@ function runSpeedTest() {
             label.textContent = `Тестирование... ${pct}%`;
         });
     })).then(() => {
-        const total = Date.now() - startTime;
         const mbps = results.length > 0
             ? (results.reduce((a, b) => a + b, 0) / results.length).toFixed(1)
             : '0';
@@ -142,7 +137,6 @@ function updateSpeedometer(mbps) {
 }
 
 // ==================== BLOG EDITOR ====================
-function initBlogEditor() {}
 function checkBlogAuth() {
     const token = (() => { try { return localStorage.getItem('blog_token'); } catch { return null; } })();
     if (token) {
@@ -274,4 +268,5 @@ function initAdminTabs() {
     if (ttydInput) {
         try { const saved = localStorage.getItem('ttyd_url'); if (saved) ttydInput.value = saved; } catch {}
     }
+    checkBlogAuth();
 }

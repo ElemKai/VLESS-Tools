@@ -1,40 +1,25 @@
-function loadBlogPosts() {
+function initBlog() {
     const list = document.getElementById('blog-list');
     if (!list) return;
-    list.innerHTML = '<div class="blog-loading">Загрузка...</div>';
-    const apiUrl = getBlogApiUrl();
+    list.innerHTML = '<p style="color:var(--white-muted);">Загрузка...</p>';
 
-    fetch(`${apiUrl}/api/posts`)
+    fetch(`${getBlogApiUrl()}/api/posts`)
         .then(r => r.json())
         .then(posts => {
             if (!Array.isArray(posts) || posts.length === 0) {
-                list.innerHTML = '<div class="blog-empty">Пока нет записей</div>';
+                list.innerHTML = '<p style="color:var(--white-muted);">Нет постов</p>';
                 return;
             }
-            list.innerHTML = posts.map(post => `
-                <article class="blog-card">
-                    <div class="blog-card-meta">
-                        <span class="blog-card-date">${formatDate(post.created_at)}</span>
-                        ${(post.tags || []).map(t => `<span class="blog-tag">${escapeHtml(t)}</span>`).join('')}
-                    </div>
-                    <h2 class="blog-card-title">
-                        <a href="#blog/${encodeURIComponent(post.slug)}">${escapeHtml(post.title)}</a>
-                    </h2>
-                    <div class="blog-card-excerpt">${escapeHtml(post.excerpt || post.content?.slice(0, 200) || '')}</div>
-                    <a href="#blog/${encodeURIComponent(post.slug)}" class="blog-card-link">Читать далее →</a>
-                </article>
-            `).join('');
+            list.innerHTML = posts.map(p => {
+                const date = new Date(p.created_at || p.createdAt);
+                return `<div class="blog-card" onclick="window.location='#/blog/${p.slug}'">
+                    <div class="blog-card-title">${escapeHtml(p.title)}</div>
+                    <div class="blog-card-excerpt">${escapeHtml(p.excerpt || p.content?.substring(0, 200) || '')}</div>
+                    <div class="blog-card-meta">${date.toLocaleDateString()} · ${(p.tags || []).join(', ')}</div>
+                </div>`;
+            }).join('');
         })
         .catch(() => {
-            list.innerHTML = '<div class="blog-empty">Ошибка загрузки. Проверьте соединение.</div>';
+            list.innerHTML = '<p style="color:var(--red);">Ошибка загрузки блога</p>';
         });
-}
-
-function formatDate(dateStr) {
-    if (!dateStr) return '';
-    try {
-        return new Date(dateStr).toLocaleDateString('ru-RU', {
-            year: 'numeric', month: 'long', day: 'numeric'
-        });
-    } catch { return dateStr; }
 }
