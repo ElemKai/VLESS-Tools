@@ -45,49 +45,147 @@ function initAdmin() {
         });
     }
 
-    // -- Speed test (speedometer) --
+    // -- Speed test (Яндекс.Интернетометр style) --
     const speedBtn = document.getElementById('speed-test');
     if (speedBtn) {
-        const speedCanvas = document.getElementById('speed-canvas');
-        const speedVal = document.getElementById('speed-value');
-        const speedUnit = document.getElementById('speed-unit');
+        const canvas = document.getElementById('speed-canvas');
+        const pingEl = document.getElementById('speed-ping');
+        const dlEl = document.getElementById('speed-dl');
+        const ulEl = document.getElementById('speed-ul');
+        const ipEl = document.getElementById('speed-ip');
 
-        speedBtn.addEventListener('click', () => {
-            if (!speedCanvas || !speedVal || !speedUnit) return;
-            const ctx = speedCanvas.getContext('2d');
-            const w = speedCanvas.width = 280, h = speedCanvas.height = 280;
-            const cx = w / 2, cy = h / 2, r = 110;
-            let angle = 0;
-            speedVal.textContent = '0';
-            speedUnit.textContent = 'Mbps';
-
-            const interval = setInterval(() => {
-                angle += 0.02;
-                if (angle > Math.PI * 1.5) { clearInterval(interval); speedBtn.disabled = false; return; }
-                const speed = Math.round((angle / (Math.PI * 1.5)) * 500);
-                speedVal.textContent = speed;
-                ctx.clearRect(0, 0, w, h);
-
-                ctx.strokeStyle = 'rgba(255,215,0,0.1)';
-                ctx.lineWidth = 12;
-                ctx.beginPath();
-                ctx.arc(cx, cy, r, 0.75 * Math.PI, 2.25 * Math.PI);
-                ctx.stroke();
-
-                const grad = ctx.createLinearGradient(0, 0, w, h);
-                grad.addColorStop(0, '#22c55e');
-                grad.addColorStop(0.5, '#FFD700');
-                grad.addColorStop(1, '#ef4444');
-                ctx.strokeStyle = grad;
-                ctx.beginPath();
-                ctx.arc(cx, cy, r, 0.75 * Math.PI, 0.75 * Math.PI + angle);
-                ctx.stroke();
-
+        function drawGauge(ctx, w, h, cx, cy, r, fraction, label, sublabel) {
+            ctx.clearRect(0, 0, w, h);
+            ctx.strokeStyle = 'rgba(255,215,0,0.08)';
+            ctx.lineWidth = 14;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0.75 * Math.PI, 2.25 * Math.PI);
+            ctx.stroke();
+            const grad = ctx.createLinearGradient(0, 0, w, h);
+            grad.addColorStop(0, '#22c55e');
+            grad.addColorStop(0.5, '#FFD700');
+            grad.addColorStop(1, '#ef4444');
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 14;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0.75 * Math.PI, 0.75 * Math.PI + fraction * 1.5 * Math.PI);
+            ctx.stroke();
+            if (label) {
                 ctx.fillStyle = 'var(--white)';
-                ctx.font = 'bold 14px monospace';
+                ctx.font = 'bold 28px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText('DOWNLOAD', cx, cy + 60);
-            }, 30);
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, cx, cy - 6);
+            }
+            if (sublabel) {
+                ctx.fillStyle = 'var(--white-muted)';
+                ctx.font = '12px monospace';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(sublabel, cx, cy + 24);
+            }
+        }
+
+        async function lookupIP() {
+            try {
+                const target = 'http://ip-api.com/json/?fields=query,isp,org';
+                const proxyUrl = 'https://spare-macaque-5540.svoboda.deno.net/api/proxy';
+                const resp = await fetch(`${proxyUrl}?url=${encodeURIComponent(target)}`);
+                const text = await resp.text();
+                const d = JSON.parse(text);
+                const body = typeof d.body === 'string' ? JSON.parse(d.body) : d;
+                if (body.query) {
+                    const parts = [body.query];
+                    if (body.isp) parts.push(body.isp);
+                    if (body.org && body.org !== body.isp) parts.push(body.org);
+                    ipEl.textContent = parts.join(' · ');
+                }
+            } catch {}
+        }
+
+        async function uploadWithProgress(url, data) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', url);
+                xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                xhr.onload = () => resolve(xhr.status);
+                xhr.onerror = reject;
+                xhr.send(data);
+            });
+        }
+
+        speedBtn.addEventListener('click', async () => {
+            speedBtn.disabled = true;
+            speedBtn.textContent = '⏳ Тестирование...';
+            pingEl.textContent = '...';
+            dlEl.textContent = '...';
+            ulEl.textContent = '...';
+            ipEl.textContent = '';
+
+            const ctx = canvas.getContext('2d');
+            const w = 300, h = 170;
+            canvas.width = w; canvas.height = h;
+            const cx = w / 2, cy = h - 10, r = 68;
+            drawGauge(ctx, w, h, cx, cy, r, 0, '', '');
+
+            const MAX_MBPS = 1000;
+
+            // 1. Ping
+            try {
+                drawGauge(ctx, w, h, cx, cy, r, 0, '...', 'Пинг');
+                let pingTotal = 0;
+                for (let i = 0; i < 5; i++) {
+                    const t = performance.now();
+                    await fetch(`https://speed.cloudflare.com/__down?bytes=100&t=${Date.now()}${i}`);
+                    pingTotal += performance.now() - t;
+                }
+                const pingMs = Math.round(pingTotal / 5);
+                pingEl.textContent = pingMs + ' ms';
+                drawGauge(ctx, w, h, cx, cy, r, 0.05, pingMs + ' ms', 'Пинг');
+            } catch { pingEl.textContent = 'ERR'; }
+
+            // 2. Download (10MB)
+            try {
+                drawGauge(ctx, w, h, cx, cy, r, 0, '...', 'Загрузка');
+                const dlBytes = 10 * 1024 * 1024;
+                const dlStart = performance.now();
+                const dlResp = await fetch(`https://speed.cloudflare.com/__down?bytes=${dlBytes}&t=${Date.now()}`);
+                const dlReader = dlResp.body.getReader();
+                let received = 0;
+                while (true) {
+                    const { done, value } = await dlReader.read();
+                    if (done) break;
+                    received += value.length;
+                    const el = (performance.now() - dlStart) / 1000;
+                    const m = (received * 8) / el / 1e6;
+                    drawGauge(ctx, w, h, cx, cy, r, Math.min(m / MAX_MBPS, 1), Math.round(m), 'Мбит/с');
+                }
+                const dlElapsed = (performance.now() - dlStart) / 1000;
+                const dlMbps = (received * 8) / dlElapsed / 1e6;
+                dlEl.textContent = dlMbps.toFixed(1) + ' Mbps';
+                drawGauge(ctx, w, h, cx, cy, r, Math.min(dlMbps / MAX_MBPS, 1), Math.round(dlMbps), 'Мбит/с ↓');
+            } catch { dlEl.textContent = 'ERR'; }
+
+            // 3. Upload (5MB)
+            try {
+                drawGauge(ctx, w, h, cx, cy, r, 0, '...', 'Отдача');
+                const ulSize = 5 * 1024 * 1024;
+                const ulBuf = new ArrayBuffer(ulSize);
+                for (let i = 0; i < ulSize; i += 65536) {
+                    crypto.getRandomValues(new Uint8Array(ulBuf, i, Math.min(65536, ulSize - i)));
+                }
+                const ulStart = performance.now();
+                await uploadWithProgress('https://speed.cloudflare.com/__up', ulBuf);
+                const ulElapsed = (performance.now() - ulStart) / 1000;
+                const ulMbps = (ulSize * 8) / ulElapsed / 1e6;
+                ulEl.textContent = ulMbps.toFixed(1) + ' Mbps';
+                drawGauge(ctx, w, h, cx, cy, r, Math.min(ulMbps / MAX_MBPS, 1), Math.round(ulMbps), 'Мбит/с ↑');
+            } catch { ulEl.textContent = 'ERR'; }
+
+            lookupIP();
+
+            speedBtn.textContent = '🔄 Повторить';
+            speedBtn.disabled = false;
         });
     }
 }
