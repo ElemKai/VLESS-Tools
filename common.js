@@ -1,5 +1,3 @@
-const BLOG_API_URL = 'https://spare-macaque-5540.svoboda.deno.net';
-
 function showToast(msg) {
     let el = document.querySelector('.toast');
     if (!el) {

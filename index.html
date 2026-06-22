@@ -15,7 +15,6 @@
         <a href="#/">Главная</a>
         <a href="#/converter">Конвертер</a>
         <a href="#/checker">Чекер</a>
-        <a href="#/blog">Блог</a>
         <a href="#/admin">Админ</a>
     </div>
     <div class="nav-spacer"></div>
@@ -135,17 +134,6 @@
     </div>
 </div>
 
-<!-- ======== BLOG ======== -->
-<div id="page-blog" class="page">
-    <div style="padding:80px 20px 40px;max-width:800px;margin:0 auto">
-        <h1 style="font-size:24px;margin-bottom:8px;color:var(--gold)">Блог</h1>
-        <p style="color:var(--white-muted);font-size:14px;margin-bottom:20px">Заметки о VLESS, OpenWRT и сетевых технологиях</p>
-        <div id="blog-list" class="blog-list">
-            <div style="color:var(--white-muted);font-size:13px">Загрузка...</div>
-        </div>
-    </div>
-</div>
-
 <!-- ======== ADMIN ======== -->
 <div id="page-admin" class="page">
     <div style="padding:80px 20px 40px;max-width:900px;margin:0 auto">
@@ -156,7 +144,6 @@
             <button class="tab-btn active" data-tab="#admin-ttyd">OpenWRT terminal</button>
             <button class="tab-btn" data-tab="#admin-ip">IP tools</button>
             <button class="tab-btn" data-tab="#admin-speedy">Speed test</button>
-            <button class="tab-btn" data-tab="#admin-blog">Blog editor</button>
         </div>
 
         <!-- TTYD -->
@@ -209,33 +196,6 @@
             </div>
         </div>
 
-        <!-- Blog editor -->
-        <div id="admin-blog" class="tab-content">
-            <div class="terminal-card">
-                <div class="terminal-topbar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="terminal-title">blog-editor</span></div>
-                <div class="card-body">
-                    <button id="gh-login" class="btn btn-outline" style="margin-bottom:12px">🔑 GitHub Login</button>
-                    <div class="ssh-form-row">
-                        <div class="ssh-form-field">
-                            <label>Заголовок</label>
-                            <input id="post-title" placeholder="Заголовок поста">
-                        </div>
-                        <div class="ssh-form-field">
-                            <label>Slug</label>
-                            <input id="post-slug" placeholder="my-post-slug">
-                        </div>
-                    </div>
-                    <label style="font-size:12px;color:var(--white-muted);margin-top:8px;display:block">Содержание (HTML)</label>
-                    <textarea id="blog-editor" rows="8" style="margin-top:4px" placeholder="HTML контент..."></textarea>
-                    <div class="btn-row">
-                        <button id="blog-save" class="btn btn-primary">Опубликовать</button>
-                        <button id="blog-load" class="btn btn-ghost">Обновить список</button>
-                    </div>
-                    <div id="blog-preview" style="background:rgba(0,0,0,0.2);border-radius:6px;padding:12px;margin-top:10px;font-size:13px;min-height:40px;color:var(--white-muted)"></div>
-                    <div id="post-list" style="margin-top:12px"></div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -246,7 +206,6 @@
 <script src="common.js"></script>
 <script src="converter.js"></script>
 <script src="checker.js"></script>
-<script src="blog.js"></script>
 <script src="admin.js"></script>
 <script src="app.js"></script>
 </body>
