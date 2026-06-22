@@ -49,6 +49,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(11,17,32,0.9
 .tab-btn{padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500;background:transparent;border:1px solid transparent;color:var(--white-muted);cursor:pointer;transition:all .2s;font-family:inherit}
 .tab-btn:hover{color:var(--white);border-color:var(--border)}
 .tab-btn.active{color:var(--gold);background:var(--gold-dim);border-color:rgba(255,215,0,0.3)}
+.page{display:none}
+.page.active{display:block}
 .tab-content{display:none}
 .tab-content.active{display:block}
 input,textarea{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:6px;padding:10px 14px;color:var(--white);font-size:14px;font-family:monospace;width:100%;outline:none;transition:border-color .2s}

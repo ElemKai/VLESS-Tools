@@ -113,7 +113,7 @@ function initAdmin() {
             ipBtn.disabled = true;
             ipResult.textContent = 'Поиск...';
             try {
-                const resp = await fetch(`${BLOG_API_URL}/api/ip?ip=${encodeURIComponent(ip)}`);
+                const resp = await fetch(`https://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,regionName,city,isp,org,as,proxy,hosting,query`);
                 const data = await resp.json();
                 ipResult.textContent = JSON.stringify(data, null, 2);
             } catch (e) {

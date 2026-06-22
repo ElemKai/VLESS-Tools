@@ -23,6 +23,7 @@ USER_AGENTS = [
     'Stash/2.6.3 (iOS 18.0)',
     'Nekoray/3.26',
     'Sing-box/1.9.0',
+    'FlClashX/1.1.2 (Windows 11)',
 ]
 
 

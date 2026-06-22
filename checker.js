@@ -20,7 +20,7 @@ async function pingServer(addr, port, timeout = 5000) {
     });
 }
 
-function parseVless(link) {
+function checkerParseVless(link) {
     try {
         if (!link.startsWith('vless://')) return null;
         const u = new URL(link);
@@ -45,7 +45,7 @@ function initChecker() {
         result.innerHTML = '⏳ Проверка...';
 
         let addr, port, remark = '';
-        const parsed = parseVless(val);
+        const parsed = checkerParseVless(val);
         if (parsed) {
             addr = parsed.addr; port = parsed.port; remark = parsed.remark;
         } else if (val.includes(':')) {
@@ -78,7 +78,7 @@ function initChecker() {
 
         const targets = [];
         for (const line of lines) {
-            const parsed = parseVless(line.trim());
+            const parsed = checkerParseVless(line.trim());
             if (parsed) targets.push(parsed);
             else if (line.includes(':')) {
                 const parts = line.split(':');
