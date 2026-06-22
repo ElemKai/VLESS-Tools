@@ -49,19 +49,36 @@
                 <span class="terminal-title">subscription.sh</span>
             </div>
             <div class="card-body">
-                <div class="sub-method">
-                    <div class="sub-method-header">
-                        <div class="sub-method-badge">1</div>
-                        <div class="sub-method-title">Ссылка на подписку</div>
+                <div class="tabs" style="margin-bottom:12px">
+                    <button class="tab-btn active" data-tab="#sub-method-url">По ссылке</button>
+                    <button class="tab-btn" data-tab="#sub-method-paste">Вставить текст</button>
+                </div>
+
+                <div id="sub-method-url" class="tab-content active">
+                    <div class="sub-method">
+                        <div class="sub-method-header">
+                            <div class="sub-method-badge">1</div>
+                            <div class="sub-method-title">Ссылка на подписку</div>
+                        </div>
+                        <div class="subscription-input-group">
+                            <input id="sub-url" type="text" placeholder="https://example.com/sub/uuid">
+                            <button id="sub-fetch" class="btn btn-primary">Загрузить</button>
+                        </div>
                     </div>
-                    <div class="subscription-input-group">
-                        <input id="sub-url" type="text" placeholder="https://example.com/sub/uuid">
-                        <button id="sub-fetch" class="btn btn-primary">Загрузить</button>
+                </div>
+
+                <div id="sub-method-paste" class="tab-content">
+                    <div class="sub-method">
+                        <div class="sub-method-header">
+                            <div class="sub-method-badge">✏</div>
+                            <div class="sub-method-title">Вставьте содержимое подписки</div>
+                        </div>
+                        <textarea id="sub-paste-input" rows="6" placeholder="vless://... (скопируйте из браузера или FlClashX)"></textarea>
+                        <button id="sub-paste-btn" class="btn btn-primary" style="margin-top:8px">Распарсить</button>
+                        <div style="margin-top:8px;font-size:12px;color:var(--white-muted)">
+                            Откройте URL подписки в браузере, скопируйте весь текст и вставьте сюда
+                        </div>
                     </div>
-                    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:13px;color:var(--white-muted)">
-                        <input type="checkbox" id="sub-local-proxy">
-                        Локальный прокси (нужен <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px">python ssh-proxy.py</code>)
-                    </label>
                 </div>
 
                 <div id="sub-status" class="status-bar">

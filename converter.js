@@ -50,27 +50,6 @@ async function fetchViaProxy(subUrl) {
     return { status: resp.status, body: text, ua: '' };
 }
 
-async function fetchViaLocalWs(subUrl) {
-    return new Promise((resolve, reject) => {
-        const ws = new WebSocket('ws://127.0.0.1:8888');
-        const timeout = setTimeout(() => { ws.close(); reject(new Error('WebSocket timeout')); }, 20000);
-        ws.onopen = () => {
-            ws.send(JSON.stringify({ mode: 'fetch', url: subUrl }));
-        };
-        ws.onmessage = (e) => {
-            clearTimeout(timeout);
-            ws.close();
-            try {
-                const data = JSON.parse(e.data);
-                resolve(data);
-            } catch {
-                resolve({ type: 'fetch_result', status: 0, body: '', error: 'Parse error' });
-            }
-        };
-        ws.onerror = () => { clearTimeout(timeout); reject(new Error('WebSocket error')); };
-    });
-}
-
 function renderVlessList(servers, container) {
     container.innerHTML = '';
     if (servers.length === 0) {
@@ -99,7 +78,6 @@ function initConverter() {
     initConverter._done = true;
     const subUrl = document.getElementById('sub-url');
     const fetchBtn = document.getElementById('sub-fetch');
-    const useLocal = document.getElementById('sub-local-proxy');
     const statusBar = document.getElementById('sub-status');
     const vlessList = document.getElementById('vless-list');
     const exportYaml = document.getElementById('export-yaml');
@@ -128,14 +106,8 @@ function initConverter() {
         lastServers = [];
         lastRaw = '';
         try {
-            let data;
-            if (useLocal.checked) {
-                setStatus('Локальный прокси...', true);
-                data = await fetchViaLocalWs(url);
-            } else {
-                setStatus('Deno прокси...', true);
-                data = await fetchViaProxy(url);
-            }
+            setStatus('Загрузка...', true);
+            const data = await fetchViaProxy(url);
             if (data.status === 200 && data.body) {
                 lastRaw = data.body;
                 const servers = parseSubscription(data.body);
@@ -153,6 +125,23 @@ function initConverter() {
         }
         fetchBtn.disabled = false;
     });
+
+    // Paste handler
+    const pasteBtn = document.getElementById('sub-paste-btn');
+    const pasteInput = document.getElementById('sub-paste-input');
+    if (pasteBtn && pasteInput) {
+        pasteBtn.addEventListener('click', () => {
+            const text = pasteInput.value.trim();
+            if (!text) return;
+            lastRaw = text;
+            const servers = parseSubscription(text);
+            lastServers = servers;
+            setStatus(`Найдено серверов: ${servers.length}`, servers.length > 0);
+            renderVlessList(servers, vlessList);
+            rawDiv.style.display = 'none';
+            showToast('Вставлено ' + servers.length + ' серверов');
+        });
+    }
 
     rawBtn.addEventListener('click', () => {
         if (lastRaw) {
