@@ -16,42 +16,56 @@ function parseVless(link) {
     } catch { return null; }
 }
 
-function parseYamlProxies(body) {
+function parseYamlBlocks(body) {
     const servers = [];
-    // Split by `- name:` to get individual proxy blocks
-    const blocks = body.split(/\n\s*-\s*name:/);
-    for (let block of blocks) {
-        if (!/type:\s*vless/.test(block)) continue;
-        // Ensure first block doesn't need the split prefix
-        if (blocks.indexOf(block) > 0) block = 'name:' + block;
-        const name = (block.match(/name:\s*"([^"]+)"/) || [])[1]
-            || (block.match(/name:\s*'([^']+)'/) || [])[1]
-            || (block.match(/name:\s*(\S+)/) || [])[1] || '';
-        const server = (block.match(/server:\s*(\S+)/) || [])[1] || '';
-        const port = (block.match(/port:\s*(\d+)/) || [])[1] || '';
-        const uuid = (block.match(/uuid:\s*(\S+)/) || [])[1] || '';
-        if (!server || !port || !uuid || server === '0.0.0.0') continue;
-        const network = (block.match(/network:\s*(\S+)/) || [])[1] || 'tcp';
-        const tlsVal = (block.match(/tls:\s*(true|false)/) || [])[1];
-        const security = tlsVal === 'true' ? 'tls' : 'none';
-        const encryption = (block.match(/encryption:\s*(\S+)/) || [])[1] || 'none';
-        const flow = (block.match(/flow:\s*(\S+)/) || [])[1] || '';
-        const sni = (block.match(/servername:\s*(\S+)/) || [])[1] || '';
-        const fp = (block.match(/client-fingerprint:\s*(\S+)/) || [])[1] || '';
-        const pbk = (block.match(/public-key:\s*(\S+)/) || [])[1] || '';
-        const sid = (block.match(/short-id:\s*(\S+)/) || [])[1] || '';
-        servers.push({ id: uuid, addr: server, port, type: network, security, encryption, flow, sni, fp, pbk, sid, remark: name });
+    const lines = body.split(/\r?\n/);
+    let current = null;
+    for (const line of lines) {
+        if (/^\s*-\s*name:/.test(line)) {
+            if (current && /type:\s*vless/i.test(current.text)) {
+                const s = extractProxy(current.text);
+                if (s) servers.push(s);
+            }
+            current = { text: line + '\n' };
+        } else if (current) {
+            current.text += line + '\n';
+        }
+    }
+    if (current && /type:\s*vless/i.test(current.text)) {
+        const s = extractProxy(current.text);
+        if (s) servers.push(s);
     }
     return servers;
+}
+
+function extractProxy(text) {
+    const name = (text.match(/name:\s*"([^"]+)"/) || [])[1]
+        || (text.match(/name:\s*'([^']+)'/) || [])[1]
+        || (text.match(/name:\s*(\S[\S ]*?)(?=\s*\n\s*\S)/) || [])[1]
+        || (text.match(/name:\s*(\S+)/) || [])[1] || '';
+    const server = (text.match(/server:\s*(\S+)/) || [])[1] || '';
+    const port = (text.match(/port:\s*(\d+)/) || [])[1] || '';
+    const uuid = (text.match(/uuid:\s*(\S+)/) || [])[1] || '';
+    if (!server || !port || !uuid || server === '0.0.0.0') return null;
+    return {
+        id: uuid, addr: server, port,
+        type: (text.match(/network:\s*(\S+)/) || [])[1] || 'tcp',
+        security: (text.match(/tls:\s*(true)/) || [])[1] ? 'tls' : 'none',
+        encryption: (text.match(/encryption:\s*(\S+)/) || [])[1] || 'none',
+        flow: (text.match(/flow:\s*(\S+)/) || [])[1] || '',
+        sni: (text.match(/servername:\s*(\S+)/) || [])[1] || '',
+        fp: (text.match(/client-fingerprint:\s*(\S+)/) || [])[1] || '',
+        pbk: (text.match(/public-key:\s*(\S+)/) || [])[1] || '',
+        sid: (text.match(/short-id:\s*(\S+)/) || [])[1] || '',
+        remark: name,
+    };
 }
 
 function parseSubscription(text) {
     let body = text;
     try { body = atob(text.replace(/\s/g, '')); } catch {}
-    // Try Clash YAML parsing first
-    const yamlServers = parseYamlProxies(body);
+    const yamlServers = parseYamlBlocks(body);
     if (yamlServers.length > 0) return yamlServers;
-    // Line-by-line VLESS URL parsing
     const servers = [];
     const links = body.split(/[\r\n]+/).filter(l => l.trim());
     for (const raw of links) {
